@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Form thu thập nội dung công việc theo vị trí</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; background: #f0f4f8; color: #263238; font: 16px/1.6 'Segoe UI', Arial, sans-serif; }
+main { max-width: 1500px; margin: auto; padding: 24px 18px 48px; }
+header { display: flex; align-items: center; gap: 20px; background: linear-gradient(135deg,#1565c0,#0d47a1); color: white; padding: 28px; border-radius: 14px; }
+header img { width: 70px; background: white; border-radius: 10px; padding: 5px; }
+h1 { font-size: 1.5rem; line-height: 1.4; margin: 0 0 8px; }
+header p { margin: 0; }
+section { background: white; border: 1px solid #e0e7ef; border-radius: 12px; margin-top: 22px; padding: 26px; }
+h2 { color: #1565c0; font-size: 1.2rem; margin: 0 0 12px; }
+.hint, #draftStatus { color: #546e7a; font-size: .9rem; }
+.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 20px; }
+.field { margin-bottom: 18px; }
+label { display: block; font-weight: 600; margin-bottom: 6px; }
+.req, #message { color: #b3261e; }
+input, select, textarea { width: 100%; padding: 11px 13px; border: 1px solid #bac9d6; border-radius: 8px; font: inherit; color: inherit; background: #fafcff; }
+textarea { min-height: 95px; resize: vertical; }
+input:focus, select:focus, textarea:focus, button:focus-visible { outline: 2px solid #1565c0; outline-offset: 2px; }
+button { padding: 10px 18px; border: 1px solid #1565c0; border-radius: 8px; background: white; color: #1565c0; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { background: #edf5ff; }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.primary { background: #1565c0; color: white; }
+.primary:hover { background: #0d47a1; }
+.table-scroll { overflow-x: auto; margin: 16px 0; border: 1px solid #cdddec; border-radius: 8px; }
+table { border-collapse: collapse; width: 100%; min-width: 1350px; table-layout: fixed; }
+th, td { padding: 10px; border: 1px solid #dce5ef; vertical-align: top; text-align: left; }
+thead th { background: #edf5ff; color: #154d83; font-size: .9rem; }
+th:first-child { width: 55px; }
+.task-table th:last-child { width: 80px; }
+td .field { margin: 0; }
+td label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+td input, td select, td textarea { padding: 8px; font-size: .9rem; }
+td textarea { min-height: 105px; }
+.department-picker { border: 1px solid #bac9d6; border-radius: 8px; padding: 8px; background: #fafcff; font-size: .9rem; }
+.department-picker summary { cursor: pointer; }
+.department-options { max-height: 230px; overflow-y: auto; margin-top: 8px; }
+td .department-option { position: static; width: auto; height: auto; clip-path: none; display: flex; gap: 8px; align-items: flex-start; font-weight: 400; padding: 5px 0; }
+.department-option input { width: auto; margin-top: 6px; flex-shrink: 0; }
+.remove { padding: 5px 10px; color: #b3261e; border-color: #e2b7b5; }
+.summary-table td { white-space: pre-wrap; overflow-wrap: anywhere; }
+@media print { @page { size: A4 landscape; margin: 10mm; } .table-scroll { overflow: visible; } .summary-table { min-width: 0; font-size: 9pt; } .summary-table th, .summary-table td { padding: 5px; } }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 20px; }
+dt { color: #546e7a; font-weight: 600; margin-top: 12px; }
+dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+[hidden] { display: none !important; }
+@media(max-width:600px) { .grid { grid-template-columns: 1fr; } header, section { padding: 18px; } header { align-items: flex-start; gap: 12px; } header img { width: 45px; } h1 { font-size: 1.2rem; } fieldset { padding: 14px; } }
+@media print { body { background: white; } main { max-width: none; padding: 0; } header { background: white; color: black; } #workForm, .actions, #draftStatus, #message { display: none !important; } dd { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main>
+<header><img src="logo-mcs.png" alt="Logo đơn vị"><div><h1>Form thu thập nội dung công việc theo vị trí</h1><p>Mô tả ngắn gọn vai trò và các đầu việc thực tế bạn đang phụ trách.</p></div></header>
+<p id="draftStatus" role="status">Bản nháp được tự động lưu trên trình duyệt này.</p>
+<form id="workForm">
+<section aria-labelledby="personTitle"><h2 id="personTitle">1. Người khai</h2><p class="hint">Các trường có dấu <span class="req">*</span> là bắt buộc.</p><div id="personFields" class="grid"></div></section>
+<section aria-labelledby="roleTitle"><h2 id="roleTitle">2. Vị trí này làm gì (ngắn)</h2><p class="hint">Nêu rõ vai trò chính và phạm vi công việc của vị trí.</p><div id="roleFields"></div></section>
+<section aria-labelledby="tasksTitle"><h2 id="tasksTitle">3. Danh sách đầu việc</h2><p class="hint" id="taskHint">Mỗi đầu việc là một dòng. Nhấn “Thêm dòng” để bổ sung; cuộn ngang để xem đủ các cột trên màn hình nhỏ. Độ khó: Thấp — quen thuộc, ít xử lý; Trung bình — cần phối hợp / xử lý tình huống; Cao — phức tạp, cần chuyên môn sâu. Bộ phận liên quan: mở danh sách và tích chọn một hoặc nhiều bộ phận; có thể để trống nếu không có.</p><div class="table-scroll" role="region" aria-labelledby="tasksTitle" tabindex="0"><table class="task-table" aria-describedby="taskHint"><thead><tr id="taskHeaders"><th scope="col">STT</th></tr></thead><tbody id="taskList"></tbody></table></div><button type="button" id="addTask">+ Thêm dòng</button></section>
+<div class="actions"><button type="submit" class="primary" id="submitButton">Gửi thông tin</button><button type="button" id="previewButton">Xem trước / In phiếu</button></div>
+</form>
+<p id="message" role="alert"></p>
+<section id="summary" hidden aria-labelledby="summaryTitle"><h2 id="summaryTitle" tabindex="-1"></h2><div id="summaryContent"></div><div class="actions"><button type="button" id="printButton">In / Lưu PDF</button><button type="button" id="backButton">Quay lại chỉnh sửa</button></div></section>
+</main>
+<script>
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx_dBxDjSDXH3cX2fvYgxGGSbpxqo06t0k_LHwvMy1wgy2W2xHdwWxKwtGuN1ZBY8Mucg/exec';
+const FORM_TYPE = 'work-content-v3';
+const DRAFT_STORAGE_KEY = 'work-content-draft-v3';
+const DEPARTMENTS = ['Tổng Hiệu trưởng', 'Hiệu trưởng', 'Hiệu phó', 'Giáo viên bộ môn', 'Giáo viên chủ nhiệm', 'Tổ trưởng chuyên môn', 'Quản sinh', 'Tư vấn tâm lý', 'Đoàn – Đội', 'Văn thư', 'Nhân sự', 'Tuyển sinh', 'Kế toán', 'Bảo vệ', 'Lao công', 'Cơ sở vật chất', 'Công nghệ thông tin', 'Y tế', 'Học sinh', 'Phụ huynh'];
+const PERSON_FIELDS = { hoTen: 'Họ tên', viTri: 'Vị trí', boPhan: 'Bộ phận', baoCaoCho: 'Báo cáo cho' };
+const ROLE_FIELDS = { dauMoi: 'Một câu: đầu mối việc gì?', phamVi: 'Làm những việc nào? (cho 3-7 ý chính)' };
+const TASK_FIELDS = { tenViec: 'Tên việc', chuKy: 'Chu kỳ', thoiHan: 'Khi nào, hạn đến khi nào', cachLam: 'Làm thế nào (các bước ngắn)', doKho: 'Độ khó', boPhanLienQuan: 'Bộ phận liên quan' };
+const REQUIRED = ['hoTen', 'viTri', 'boPhan', 'dauMoi', 'tenViec', 'chuKy', 'doKho'];
+const $ = id => document.getElementById(id);
+const form = $('workForm');
+let sequence = 0;
+let pendingSubmission = null;
+
+function createFields(container, fields, values = {}, prefix = '') {
+  Object.entries(fields).forEach(([key, title]) => {
+    if (key === 'boPhanLienQuan') {
+      const cell = document.createElement('td');
+      const picker = document.createElement('details'); picker.className = 'department-picker'; picker.dataset.key = key;
+      const summary = document.createElement('summary');
+      const list = document.createElement('div'); list.className = 'department-options';
+      DEPARTMENTS.forEach((value, index) => {
+        const label = document.createElement('label'); label.className = 'department-option';
+        const checkbox = document.createElement('input'); checkbox.type = 'checkbox'; checkbox.value = value;
+        checkbox.id = prefix + key + '-' + index; checkbox.name = prefix + key;
+        checkbox.checked = Array.isArray(values[key]) && values[key].includes(value);
+        label.append(checkbox, document.createTextNode(value)); list.append(label);
+      });
+      const update = () => {
+        const selected = [...list.querySelectorAll(':checked')].map(input => input.value);
+        summary.textContent = selected.length ? selected.join(', ') : 'Chọn bộ phận (có thể chọn nhiều)';
+      };
+      picker.addEventListener('change', update); update();
+      picker.append(summary, list); cell.append(picker); container.append(cell); return;
+    }
+    const group = document.createElement('div');
+    group.className = 'field';
+    const label = document.createElement('label');
+    label.textContent = title;
+    if (REQUIRED.includes(key)) {
+      const star = document.createElement('span');
+      star.className = 'req'; star.textContent = ' *'; label.append(star);
+    }
+    const options = key === 'chuKy' ? ['Ngày', 'Tuần', 'Tháng', 'Năm', 'Phát sinh'] : key === 'doKho' ? ['Thấp', 'Trung bình', 'Cao'] : null;
+    const short = key in PERSON_FIELDS || key === 'tenViec';
+    const input = document.createElement(options ? 'select' : short ? 'input' : 'textarea');
+    input.id = prefix + key; input.name = input.id; input.dataset.key = key;
+    input.required = REQUIRED.includes(key); label.htmlFor = input.id;
+    if (options) {
+      input.add(new Option('— Chọn ' + title.toLowerCase() + ' —', ''));
+      options.forEach(value => input.add(new Option(value, value)));
+    } else { input.maxLength = short ? 200 : 4000; }
+    const hints = { hoTen: 'Ví dụ: Nguyễn Văn An', viTri: 'Ví dụ: Giáo viên Toán & Chủ nhiệm lớp 10A1.2', boPhan: 'Ví dụ: Tổ Toán Tin', baoCaoCho: 'Ví dụ: Tổ trưởng/Tổ phó/BGH', dauMoi: 'Ví dụ: Giảng dạy bộ môn Toán & Quản lý lớp 10A1.2', phamVi: 'Ví dụ: Tiếp nhận, cập nhật và lưu trữ hồ sơ', tenViec: 'Ví dụ: Rà soát hồ sơ nhân sự', thoiHan: 'Ví dụ: Nhận ngày 20, xong trước ngày 25 hằng tháng', cachLam: 'Ví dụ: 1. Thu thập  2. Kiểm tra  3. Cập nhật' };
+    if (hints[key]) input.placeholder = hints[key];
+    if (key === 'hoTen') input.autocomplete = 'name';
+    input.value = typeof values[key] === 'string' ? values[key] : '';
+    group.append(label, input);
+    if (container.tagName === 'TR') {
+      const cell = document.createElement('td'); cell.append(group); container.append(cell);
+    } else container.append(group);
+  });
+}
+function renumberTasks() {
+  [...$('taskList').children].forEach((task, index, tasks) => {
+    task.querySelector('th').textContent = index + 1;
+    task.querySelectorAll('.field > label').forEach(label => {
+      const input = document.getElementById(label.htmlFor);
+      label.textContent = TASK_FIELDS[input.dataset.key] + ' — đầu việc ' + (index + 1);
+    });
+    task.querySelector('.department-options').setAttribute('aria-label', 'Bộ phận liên quan — đầu việc ' + (index + 1));
+    task.querySelector('.department-options').setAttribute('role', 'group');
+    const button = task.querySelector('button');
+    button.disabled = tasks.length === 1;
+    button.setAttribute('aria-label', 'Xóa đầu việc ' + (index + 1));
+  });
+}
+function addTask(values = {}) {
+  const task = document.createElement('tr');
+  task.innerHTML = '<th scope="row"></th>';
+  createFields(task, TASK_FIELDS, values, 'task-' + (++sequence) + '-');
+  const action = document.createElement('td');
+  action.innerHTML = '<button type="button" class="remove">Xóa</button>';
+  task.append(action);
+  task.querySelector('button').addEventListener('click', () => {
+    if ($('taskList').children.length <= 1) return;
+    if ([...task.querySelectorAll('[data-key]')].some(input => input.value || input.querySelector('input:checked')) && !confirm('Xóa đầu việc này và nội dung đã nhập?')) return;
+    task.remove(); renumberTasks(); saveDraft(); $('addTask').focus();
+  });
+  $('taskList').append(task); renumberTasks(); return task;
+}
+function collectData() {
+  const data = { formType: FORM_TYPE };
+  Object.keys({ ...PERSON_FIELDS, ...ROLE_FIELDS }).forEach(key => { data[key] = $(key).value.trim(); });
+  data.tasks = [...$('taskList').children].map(task => Object.fromEntries([...task.querySelectorAll('[data-key]')].map(input => [input.dataset.key, input.dataset.key === 'boPhanLienQuan' ? [...input.querySelectorAll(':checked')].map(box => box.value) : input.value.trim()])));
+  return data;
+}
+function saveDraft() {
+  try { localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(collectData())); $('draftStatus').textContent = 'Đã lưu bản nháp trên trình duyệt này.'; }
+  catch (_) { $('draftStatus').textContent = 'Không thể lưu bản nháp. Vui lòng giữ trang mở đến khi gửi xong.'; }
+}
+function restoreDraft() {
+  try {
+    const data = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || localStorage.getItem('work-content-draft-v2') || localStorage.getItem('work-content-draft-v1') || 'null');
+    if (!data || ![FORM_TYPE, 'work-content-v2', 'work-content-v1'].includes(data.formType)) return;
+    Object.keys({ ...PERSON_FIELDS, ...ROLE_FIELDS }).forEach(key => { if (typeof data[key] === 'string') $(key).value = data[key]; });
+    if (Array.isArray(data.tasks)) data.tasks.forEach(task => { if (task && typeof task === 'object') addTask(task); });
+    $('draftStatus').textContent = data.formType === FORM_TYPE ? 'Đã khôi phục bản nháp lần nhập trước.' : 'Đã khôi phục các trường còn phù hợp. Vui lòng kiểm tra độ khó và chọn bộ phận liên quan. Bản nháp cũ vẫn được giữ riêng.';
+  } catch (_) { $('draftStatus').textContent = 'Không đọc được bản nháp. Bạn có thể nhập phiếu mới.'; }
+}
+function showSummary(data, submitted) {
+  $('summaryContent').replaceChildren();
+  function section(title, labels, values) {
+    const heading = document.createElement('h3'); heading.textContent = title;
+    const list = document.createElement('dl');
+    Object.entries(labels).forEach(([key, label]) => {
+      const term = document.createElement('dt'); term.textContent = label;
+      const value = document.createElement('dd'); value.textContent = values[key] || 'Chưa cung cấp';
+      list.append(term, value);
+    });
+    $('summaryContent').append(heading, list);
+  }
+  section('1. Người khai', PERSON_FIELDS, data);
+  section('2. Vị trí này làm gì (ngắn)', ROLE_FIELDS, data);
+  const heading = document.createElement('h3'); heading.textContent = '3. Danh sách đầu việc'; $('summaryContent').append(heading);
+  const wrapper = document.createElement('div'); wrapper.className = 'table-scroll';
+  const table = document.createElement('table'); table.className = 'summary-table';
+  const head = table.createTHead().insertRow();
+  ['STT', ...Object.values(TASK_FIELDS)].forEach(title => { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = title; head.append(cell); });
+  const body = table.createTBody();
+  data.tasks.forEach((task, index) => {
+    const row = body.insertRow();
+    [index + 1, ...Object.keys(TASK_FIELDS).map(key => Array.isArray(task[key]) ? task[key].join('\n') || 'Không chọn' : task[key] || 'Chưa cung cấp')].forEach(value => { row.insertCell().textContent = value; });
+  });
+  wrapper.append(table); $('summaryContent').append(wrapper);
+  $('summaryTitle').textContent = submitted ? 'Đã gửi thông tin thành công!' : 'Xem trước phiếu — chưa gửi';
+  $('backButton').hidden = submitted; $('summary').hidden = false; form.hidden = true; $('summaryTitle').focus();
+}
+form.addEventListener('input', event => { event.target.setCustomValidity(''); saveDraft(); });
+form.addEventListener('change', saveDraft);
+$('addTask').addEventListener('click', () => { addTask().querySelector('input').focus(); saveDraft(); });
+$('previewButton').addEventListener('click', () => showSummary(collectData(), false));
+$('backButton').addEventListener('click', () => { $('summary').hidden = true; form.hidden = false; $('previewButton').focus(); });
+$('printButton').addEventListener('click', () => window.print());
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  form.querySelectorAll('[required]').forEach(input => input.setCustomValidity(input.value.trim() ? '' : 'Vui lòng điền thông tin này.'));
+  if (!form.reportValidity()) return;
+  const data = collectData(); const fingerprint = JSON.stringify(data);
+  if (!pendingSubmission || pendingSubmission.fingerprint !== fingerprint) pendingSubmission = { fingerprint, id: 'work-' + Date.now() + '-' + Math.random().toString(36).slice(2) };
+  data.submissionId = pendingSubmission.id;
+  const controls = [...form.querySelectorAll('input, textarea, select, button')]; const states = controls.map(input => input.disabled);
+  controls.forEach(input => { input.disabled = true; }); $('submitButton').textContent = 'Đang gửi...'; $('message').textContent = '';
+  const controller = new AbortController(); const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(SCRIPT_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify(data), signal: controller.signal });
+    if (!response.ok) throw new Error('Máy chủ chưa phản hồi thành công. Vui lòng thử lại.');
+    const result = await response.json();
+    if (result.formType !== FORM_TYPE) throw new Error('Máy chủ chưa cập nhật form công việc. Vui lòng triển khai lại code.gs.');
+    if (result.status !== 'ok') throw new Error(result.message || 'Không gửi được dữ liệu. Vui lòng thử lại.');
+    showSummary(data, true);
+    try { localStorage.removeItem(DRAFT_STORAGE_KEY); } catch (_) {}
+    $('draftStatus').textContent = 'Thông tin đã được gửi. Bạn có thể in hoặc lưu phiếu PDF bên dưới.';
+  } catch (error) { $('message').textContent = error.name === 'AbortError' ? 'Quá thời gian chờ. Bạn có thể gửi lại; nội dung vẫn được giữ nguyên.' : 'Gửi chưa thành công: ' + error.message; }
+  finally { clearTimeout(timeout); controls.forEach((input, index) => { input.disabled = states[index]; }); $('submitButton').textContent = 'Gửi thông tin'; }
+});
+createFields($('personFields'), PERSON_FIELDS);
+createFields($('roleFields'), ROLE_FIELDS);
+Object.entries(TASK_FIELDS).forEach(([key, title]) => {
+  const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = title + (REQUIRED.includes(key) ? ' *' : ''); $('taskHeaders').append(cell);
+});
+const actionHeader = document.createElement('th'); actionHeader.scope = 'col'; actionHeader.textContent = 'Xóa'; $('taskHeaders').append(actionHeader);
+restoreDraft();
+if (!$('taskList').children.length) addTask();
+</script>
+</body>
+</html>
