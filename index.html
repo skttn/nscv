@@ -28,7 +28,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .primary { background: #1565c0; color: white; }
 .primary:hover { background: #0d47a1; }
 .table-scroll { overflow-x: auto; margin: 16px 0; border: 1px solid #cdddec; border-radius: 8px; }
-table { border-collapse: collapse; width: 100%; min-width: 1350px; table-layout: fixed; }
+table { border-collapse: collapse; width: 100%; min-width: 1580px; table-layout: fixed; }
 th, td { padding: 10px; border: 1px solid #dce5ef; vertical-align: top; text-align: left; }
 thead th { background: #edf5ff; color: #154d83; font-size: .9rem; }
 th:first-child { width: 55px; }
@@ -42,6 +42,10 @@ td textarea { min-height: 105px; }
 .department-options { max-height: 230px; overflow-y: auto; margin-top: 8px; }
 td .department-option { position: static; width: auto; height: auto; clip-path: none; display: flex; gap: 8px; align-items: flex-start; font-weight: 400; padding: 5px 0; }
 .department-option input { width: auto; margin-top: 6px; flex-shrink: 0; }
+.star-rating { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.star-rating button { background: none; border: none; padding: 2px 4px; font-size: 22px; line-height: 1; cursor: pointer; color: #cbd5e1; border-radius: 4px; }
+.star-rating button.filled { color: #f59e0b; }
+.star-rating button:focus-visible { outline: 2px solid #1565c0; outline-offset: 2px; }
 .remove { padding: 5px 10px; color: #b3261e; border-color: #e2b7b5; }
 .summary-table td { white-space: pre-wrap; overflow-wrap: anywhere; }
 @media print { @page { size: A4 landscape; margin: 10mm; } .table-scroll { overflow: visible; } .summary-table { min-width: 0; font-size: 9pt; } .summary-table th, .summary-table td { padding: 5px; } }
@@ -60,7 +64,7 @@ dd { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
 <form id="workForm">
 <section aria-labelledby="personTitle"><h2 id="personTitle">1. Người khai</h2><p class="hint">Các trường có dấu <span class="req">*</span> là bắt buộc.</p><div id="personFields" class="grid"></div></section>
 <section aria-labelledby="roleTitle"><h2 id="roleTitle">2. Vị trí này làm gì (ngắn)</h2><p class="hint">Nêu rõ vai trò chính và phạm vi công việc của vị trí.</p><div id="roleFields"></div></section>
-<section aria-labelledby="tasksTitle"><h2 id="tasksTitle">3. Danh sách đầu việc</h2><p class="hint" id="taskHint">Mỗi đầu việc là một dòng. Nhấn “Thêm dòng” để bổ sung; cuộn ngang để xem đủ các cột trên màn hình nhỏ. Độ khó: Thấp — quen thuộc, ít xử lý; Trung bình — cần phối hợp / xử lý tình huống; Cao — phức tạp, cần chuyên môn sâu. Bộ phận liên quan: mở danh sách và tích chọn một hoặc nhiều bộ phận; có thể để trống nếu không có.</p><div class="table-scroll" role="region" aria-labelledby="tasksTitle" tabindex="0"><table class="task-table" aria-describedby="taskHint"><thead><tr id="taskHeaders"><th scope="col">STT</th></tr></thead><tbody id="taskList"></tbody></table></div><button type="button" id="addTask">+ Thêm dòng</button></section>
+<section aria-labelledby="tasksTitle"><h2 id="tasksTitle">3. Danh sách đầu việc</h2><p class="hint" id="taskHint">Mỗi đầu việc là một dòng. Nhấn “Thêm dòng” để bổ sung; cuộn ngang để xem đủ các cột trên màn hình nhỏ. Độ khó: chọn 1–5 sao (nhiều sao = càng khó). Chu kỳ có mục Tùy chọn để nhập tay. Bộ phận liên quan: mở danh sách và tích chọn một hoặc nhiều bộ phận; có thể để trống nếu không có.</p><div class="table-scroll" role="region" aria-labelledby="tasksTitle" tabindex="0"><table class="task-table" aria-describedby="taskHint"><thead><tr id="taskHeaders"><th scope="col">STT</th></tr></thead><tbody id="taskList"></tbody></table></div><button type="button" id="addTask">+ Thêm dòng</button></section>
 <div class="actions"><button type="submit" class="primary" id="submitButton">Gửi thông tin</button><button type="button" id="previewButton">Xem trước / In phiếu</button></div>
 </form>
 <p id="message" role="alert"></p>
@@ -73,7 +77,7 @@ const DRAFT_STORAGE_KEY = 'work-content-draft-v3';
 const DEPARTMENTS = ['Tổng Hiệu trưởng', 'Hiệu trưởng', 'Hiệu phó', 'Giáo viên bộ môn', 'Giáo viên chủ nhiệm', 'Tổ trưởng chuyên môn', 'Quản sinh', 'Tư vấn tâm lý', 'Đoàn – Đội', 'Văn thư', 'Nhân sự', 'Tuyển sinh', 'Kế toán', 'Bảo vệ', 'Lao công', 'Cơ sở vật chất', 'Công nghệ thông tin', 'Y tế', 'Học sinh', 'Phụ huynh'];
 const PERSON_FIELDS = { hoTen: 'Họ tên', viTri: 'Vị trí', boPhan: 'Bộ phận', baoCaoCho: 'Báo cáo cho' };
 const ROLE_FIELDS = { dauMoi: 'Một câu: đầu mối việc gì?', phamVi: 'Làm những việc nào? (cho 3-7 ý chính)' };
-const TASK_FIELDS = { tenViec: 'Tên việc', chuKy: 'Chu kỳ', thoiHan: 'Khi nào, hạn đến khi nào', cachLam: 'Làm thế nào (các bước ngắn)', doKho: 'Độ khó', boPhanLienQuan: 'Bộ phận liên quan' };
+const TASK_FIELDS = { tenViec: 'Tên việc', chuKy: 'Chu kỳ', thoiHan: 'Khi nào, hạn đến khi nào', cachLam: 'Làm thế nào (các bước ngắn)', doKho: 'Độ khó (1–5 sao)', boPhanLienQuan: 'Bộ phận liên quan', ghiChu: 'Ghi chú/Tính chất công việc' };
 const REQUIRED = ['hoTen', 'viTri', 'boPhan', 'dauMoi', 'tenViec', 'chuKy', 'doKho'];
 const $ = id => document.getElementById(id);
 const form = $('workForm');
@@ -109,20 +113,81 @@ function createFields(container, fields, values = {}, prefix = '') {
       const star = document.createElement('span');
       star.className = 'req'; star.textContent = ' *'; label.append(star);
     }
-    const options = key === 'chuKy' ? ['Ngày', 'Tuần', 'Tháng', 'Năm', 'Phát sinh'] : key === 'doKho' ? ['Thấp', 'Trung bình', 'Cao'] : null;
+    const options = null;
     const short = key in PERSON_FIELDS || key === 'tenViec';
-    const input = document.createElement(options ? 'select' : short ? 'input' : 'textarea');
-    input.id = prefix + key; input.name = input.id; input.dataset.key = key;
-    input.required = REQUIRED.includes(key); label.htmlFor = input.id;
+    const isStar = key === 'doKho';
+    const isChuKy = key === 'chuKy';
+    let input;
+    let customChuKy;
+    let starHidden;
+    let starWrap;
+    if (isChuKy) {
+      input = document.createElement('select');
+      customChuKy = document.createElement('input');
+      customChuKy.type = 'text'; customChuKy.maxLength = 100;
+      customChuKy.placeholder = 'Nhập chu kỳ khác, VD: Theo học kỳ / Khi có sự kiện';
+      customChuKy.style.marginTop = '8px'; customChuKy.hidden = true;
+    } else if (isStar) {
+      starWrap = document.createElement('div'); starWrap.className = 'star-rating';
+      starWrap.setAttribute('role', 'radiogroup'); starWrap.setAttribute('aria-label', title);
+      starHidden = document.createElement('input'); starHidden.type = 'hidden';
+      starHidden.id = prefix + key; starHidden.name = starHidden.id; starHidden.dataset.key = key;
+      const current = typeof values[key] === 'number' ? values[key] : Number(values[key]) || 0;
+      starHidden.value = String(current >= 1 && current <= 5 ? current : '');
+      const render = () => {
+        const val = Number(starHidden.value) || 0;
+        starWrap.querySelectorAll('button').forEach(button => {
+          const n = Number(button.dataset.value);
+          button.classList.toggle('filled', n <= val);
+          button.setAttribute('aria-checked', String(n === val));
+        });
+      };
+      for (let star = 1; star <= 5; star += 1) {
+        const button = document.createElement('button');
+        button.type = 'button'; button.dataset.value = String(star);
+        button.setAttribute('role', 'radio'); button.setAttribute('aria-label', star + ' sao');
+        button.textContent = '★';
+        button.addEventListener('click', () => { starHidden.value = String(star); render(); saveDraft(); });
+        starWrap.append(button);
+      }
+      render();
+    } else {
+      input = document.createElement(short ? 'input' : 'textarea');
+    }
+    const active = isStar ? starHidden : input;
+    if (!isStar) {
+      input.id = prefix + key; input.name = input.id; input.dataset.key = key;
+    }
+    active.required = REQUIRED.includes(key); label.htmlFor = active.id;
     if (options) {
       input.add(new Option('— Chọn ' + title.toLowerCase() + ' —', ''));
       options.forEach(value => input.add(new Option(value, value)));
-    } else { input.maxLength = short ? 200 : 4000; }
-    const hints = { hoTen: 'Ví dụ: Nguyễn Văn An', viTri: 'Ví dụ: Giáo viên Toán & Chủ nhiệm lớp 10A1.2', boPhan: 'Ví dụ: Tổ Toán Tin', baoCaoCho: 'Ví dụ: Tổ trưởng/Tổ phó/BGH', dauMoi: 'Ví dụ: Giảng dạy bộ môn Toán & Quản lý lớp 10A1.2', phamVi: 'Ví dụ: Tiếp nhận, cập nhật và lưu trữ hồ sơ', tenViec: 'Ví dụ: Rà soát hồ sơ nhân sự', thoiHan: 'Ví dụ: Nhận ngày 20, xong trước ngày 25 hằng tháng', cachLam: 'Ví dụ: 1. Thu thập  2. Kiểm tra  3. Cập nhật' };
-    if (hints[key]) input.placeholder = hints[key];
-    if (key === 'hoTen') input.autocomplete = 'name';
-    input.value = typeof values[key] === 'string' ? values[key] : '';
-    group.append(label, input);
+    } else if (!isStar) { input.maxLength = short ? 200 : 4000; }
+    const hints = { hoTen: 'Ví dụ: Nguyễn Văn An', viTri: 'Ví dụ: Giáo viên Toán & Chủ nhiệm lớp 10A1.2', boPhan: 'Ví dụ: Tổ Toán Tin', baoCaoCho: 'Ví dụ: Tổ trưởng/Tổ phó/BGH', dauMoi: 'Ví dụ: Giảng dạy bộ môn Toán & Quản lý lớp 10A1.2', phamVi: 'VD: Dạy Toán 10, chủ nhiệm 10A1, ra đề, chấm bài, họp PH, sinh hoạt tổ', tenViec: 'VD: Soạn giáo án và dạy tiết Toán 10', thoiHan: 'VD: Trước tiết 1 ngày; nộp điểm trước 30/05', cachLam: 'VD: 1) Soạn 2) Duyệt tổ 3) Dạy & đánh giá', ghiChu: 'VD: Thường xuyên – cần chính xác cao; phối hợp nhiều bộ phận' };
+    if (hints[key]) {
+      if (isStar) starWrap.title = hints[key];
+      else input.placeholder = hints[key];
+    }
+    if (!isStar) {
+      if (key === 'hoTen') input.autocomplete = 'name';
+      const isCustomChuKy = isChuKy && typeof values[key] === 'string' && values[key] && !['Ngày', 'Tuần', 'Tháng', 'Năm', 'Phát sinh', ''].includes(values[key]);
+      if (isChuKy) input.add(new Option('— Chọn ' + title.toLowerCase() + ' —', ''));
+      if (isChuKy) ['Ngày', 'Tuần', 'Tháng', 'Năm', 'Phát sinh', 'Tùy chọn'].forEach(value => input.add(new Option(value, value)));
+      input.value = typeof values[key] === 'string' && !isCustomChuKy ? values[key] : '';
+      if (isChuKy) {
+        if (isCustomChuKy) { input.value = 'Tùy chọn'; customChuKy.value = values[key]; customChuKy.hidden = false; customChuKy.required = true; input.required = false; }
+        input.addEventListener('change', () => {
+          const isCustom = input.value === 'Tùy chọn';
+          customChuKy.hidden = !isCustom; customChuKy.required = isCustom; input.required = !isCustom;
+          if (!isCustom) customChuKy.setCustomValidity('');
+          saveDraft();
+        });
+        customChuKy.id = prefix + key + '_custom'; customChuKy.name = customChuKy.id;
+        customChuKy.addEventListener('input', () => { customChuKy.setCustomValidity(''); saveDraft(); });
+      }
+    }
+    if (isStar) { group.append(label, starWrap, starHidden); }
+    else { group.append(label, input); if (customChuKy) group.append(customChuKy); }
     if (container.tagName === 'TR') {
       const cell = document.createElement('td'); cell.append(group); container.append(cell);
     } else container.append(group);
@@ -137,7 +202,7 @@ function renumberTasks() {
     });
     task.querySelector('.department-options').setAttribute('aria-label', 'Bộ phận liên quan — đầu việc ' + (index + 1));
     task.querySelector('.department-options').setAttribute('role', 'group');
-    const button = task.querySelector('button');
+    const button = task.querySelector('.remove');
     button.disabled = tasks.length === 1;
     button.setAttribute('aria-label', 'Xóa đầu việc ' + (index + 1));
   });
@@ -149,7 +214,7 @@ function addTask(values = {}) {
   const action = document.createElement('td');
   action.innerHTML = '<button type="button" class="remove">Xóa</button>';
   task.append(action);
-  task.querySelector('button').addEventListener('click', () => {
+  task.querySelector('.remove').addEventListener('click', () => {
     if ($('taskList').children.length <= 1) return;
     if ([...task.querySelectorAll('[data-key]')].some(input => input.value || input.querySelector('input:checked')) && !confirm('Xóa đầu việc này và nội dung đã nhập?')) return;
     task.remove(); renumberTasks(); saveDraft(); $('addTask').focus();
@@ -159,7 +224,19 @@ function addTask(values = {}) {
 function collectData() {
   const data = { formType: FORM_TYPE };
   Object.keys({ ...PERSON_FIELDS, ...ROLE_FIELDS }).forEach(key => { data[key] = $(key).value.trim(); });
-  data.tasks = [...$('taskList').children].map(task => Object.fromEntries([...task.querySelectorAll('[data-key]')].map(input => [input.dataset.key, input.dataset.key === 'boPhanLienQuan' ? [...input.querySelectorAll(':checked')].map(box => box.value) : input.value.trim()])));
+  data.tasks = [...$('taskList').children].map(task => Object.fromEntries([...task.querySelectorAll('[data-key]')].map(input => {
+    if (input.dataset.key === 'boPhanLienQuan') return [input.dataset.key, [...input.querySelectorAll(':checked')].map(box => box.value)];
+    if (input.dataset.key === 'doKho') {
+      const raw = input.value.trim();
+      const num = Number(raw);
+      return [input.dataset.key, raw === '' ? '' : num];
+    }
+    if (input.dataset.key === 'chuKy' && input.value === 'Tùy chọn') {
+      const custom = task.querySelector('input[name="' + input.name + '_custom"]');
+      return [input.dataset.key, (custom ? custom.value : '').trim()];
+    }
+    return [input.dataset.key, input.value.trim()];
+  })));
   return data;
 }
 function saveDraft() {
@@ -168,15 +245,21 @@ function saveDraft() {
 }
 function restoreDraft() {
   try {
-    const data = JSON.parse(localStorage.getItem(DRAFT_STORAGE_KEY) || localStorage.getItem('work-content-draft-v2') || localStorage.getItem('work-content-draft-v1') || 'null');
-    if (!data || ![FORM_TYPE, 'work-content-v2', 'work-content-v1'].includes(data.formType)) return;
+    const raw = localStorage.getItem(DRAFT_STORAGE_KEY) || localStorage.getItem('work-content-draft-v3') || localStorage.getItem('work-content-draft-v2') || localStorage.getItem('work-content-draft-v1');
+    const data = JSON.parse(raw || 'null');
+    if (!data || !['work-content-v3', 'work-content-v2', 'work-content-v1'].includes(data.formType)) return;
     Object.keys({ ...PERSON_FIELDS, ...ROLE_FIELDS }).forEach(key => { if (typeof data[key] === 'string') $(key).value = data[key]; });
     if (Array.isArray(data.tasks)) data.tasks.forEach(task => { if (task && typeof task === 'object') addTask(task); });
-    $('draftStatus').textContent = data.formType === FORM_TYPE ? 'Đã khôi phục bản nháp lần nhập trước.' : 'Đã khôi phục các trường còn phù hợp. Vui lòng kiểm tra độ khó và chọn bộ phận liên quan. Bản nháp cũ vẫn được giữ riêng.';
+    $('draftStatus').textContent = data.formType === FORM_TYPE ? 'Đã khôi phục bản nháp lần nhập trước.' : 'Đã khôi phục các trường còn phù hợp. Vui lòng kiểm tra chu kỳ và chọn bộ phận liên quan. Bản nháp cũ vẫn được giữ riêng.';
   } catch (_) { $('draftStatus').textContent = 'Không đọc được bản nháp. Bạn có thể nhập phiếu mới.'; }
 }
 function showSummary(data, submitted) {
   $('summaryContent').replaceChildren();
+  function formatTaskValue(key, value) {
+    if (key === 'doKho') return typeof value === 'number' ? '★'.repeat(value) + ' (' + value + '/5)' : 'Chưa cung cấp';
+    if (Array.isArray(value)) return value.join('\n') || 'Không chọn';
+    return value || 'Chưa cung cấp';
+  }
   function section(title, labels, values) {
     const heading = document.createElement('h3'); heading.textContent = title;
     const list = document.createElement('dl');
@@ -197,7 +280,7 @@ function showSummary(data, submitted) {
   const body = table.createTBody();
   data.tasks.forEach((task, index) => {
     const row = body.insertRow();
-    [index + 1, ...Object.keys(TASK_FIELDS).map(key => Array.isArray(task[key]) ? task[key].join('\n') || 'Không chọn' : task[key] || 'Chưa cung cấp')].forEach(value => { row.insertCell().textContent = value; });
+    [index + 1, ...Object.keys(TASK_FIELDS).map(key => formatTaskValue(key, task[key]))].forEach(value => { row.insertCell().textContent = value; });
   });
   wrapper.append(table); $('summaryContent').append(wrapper);
   $('summaryTitle').textContent = submitted ? 'Đã gửi thông tin thành công!' : 'Xem trước phiếu — chưa gửi';
@@ -211,8 +294,15 @@ $('backButton').addEventListener('click', () => { $('summary').hidden = true; fo
 $('printButton').addEventListener('click', () => window.print());
 form.addEventListener('submit', async event => {
   event.preventDefault();
-  form.querySelectorAll('[required]').forEach(input => input.setCustomValidity(input.value.trim() ? '' : 'Vui lòng điền thông tin này.'));
-  if (!form.reportValidity()) return;
+  const starValidation = [...form.querySelectorAll('input[data-key="doKho"]')].map(input => {
+    const ok = input.value.trim() !== '' && Number.isInteger(Number(input.value)) && Number(input.value) >= 1 && Number(input.value) <= 5;
+    if (!ok) input.setCustomValidity('Vui lòng chọn độ khó 1–5 sao.'); else input.setCustomValidity('');
+    return ok;
+  }).every(Boolean);
+  [...form.querySelectorAll('select')].forEach(input => { if (input.value === 'Tùy chọn') return; input.setCustomValidity(input.value.trim() ? '' : 'Vui lòng điền thông tin này.'); });
+  [...form.querySelectorAll('input[name$="_custom"]')].forEach(input => { if (!input.hidden) input.setCustomValidity(input.value.trim() ? '' : 'Vui lòng điền chu kỳ tùy chọn.'); });
+  form.querySelectorAll('input:not([name$="_custom"]):not([data-key="doKho"])[required], textarea[required]').forEach(input => input.setCustomValidity(input.value.trim() ? '' : 'Vui lòng điền thông tin này.'));
+  if (!starValidation || !form.reportValidity()) return;
   const data = collectData(); const fingerprint = JSON.stringify(data);
   if (!pendingSubmission || pendingSubmission.fingerprint !== fingerprint) pendingSubmission = { fingerprint, id: 'work-' + Date.now() + '-' + Math.random().toString(36).slice(2) };
   data.submissionId = pendingSubmission.id;
